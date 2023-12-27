@@ -82,13 +82,19 @@
 //! assert!(!transparent.is_opaque());
 //! ```
 
-use std::fmt::{Display, Formatter};
+use std::{
+    fmt::{Display, Formatter},
+    ops::RangeInclusive,
+};
 
 /// An 8-bit RGBA color.
 ///
 /// The `Rgba` color space is the most commonly used color space in which the
 /// red, green, blue, and alpha channels are all 8-bit values. It has a close
 /// relationship with it's hexadecimal counterpart, the hex color (#RRGGBBAA).
+///
+/// The normalized representation of red, green, blue, and alpha values must be
+/// in the range \[0.0, 1.0\].
 ///
 /// # Examples
 ///
@@ -185,6 +191,25 @@ pub struct Rgba {
 }
 
 impl Rgba {
+    /// The minimum value for each channel.
+    pub const CHANNEL_MIN: u8 = u8::MIN;
+
+    /// The maximum value for each channel.
+    pub const CHANNEL_MAX: u8 = u8::MAX;
+
+    /// The range of each channel.
+    pub const CHANNEL_RANGE: RangeInclusive<u8> = Self::CHANNEL_MIN..=Self::CHANNEL_MAX;
+
+    /// The minimum normalized value for each channel.
+    pub const NORM_CHANNEL_MIN: f64 = 0.0f64;
+
+    /// The maximum normalized value for each channel.
+    pub const NORM_CHANNEL_MAX: f64 = 1.0f64;
+
+    /// The range of each normalized channel.
+    pub const NORM_CHANNEL_RANGE: RangeInclusive<f64> =
+        Self::NORM_CHANNEL_MIN..=Self::NORM_CHANNEL_MAX;
+
     /// Creates a new `Rgba` color with the given r, g, b, and a channel values.
     ///
     /// # Examples
@@ -230,6 +255,33 @@ impl Rgba {
         self.r = value;
     }
 
+    /// Gets the normalized red channel value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let red = colo_rs::Rgba::from((1.0, 0.0, 0.0, 1.0));
+    /// assert_eq!(red.r_norm(), 1.0);
+    /// ```
+    #[inline]
+    pub fn r_norm(&self) -> f64 {
+        Self::normalize(self.r())
+    }
+
+    /// Sets the normalized red channel value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut red = colo_rs::Rgba::from((0.5, 0.0, 0.0, 1.0));
+    /// red.set_r_norm(1.0);
+    /// assert_eq!(red.r_norm(), 1.0);
+    /// ```
+    #[inline]
+    pub fn set_r_norm(&mut self, value: f64) {
+        self.set_r(Self::denormalize(value));
+    }
+
     /// Gets the green channel value.
     ///
     /// # Examples
@@ -255,6 +307,33 @@ impl Rgba {
     #[inline]
     pub fn set_g(&mut self, value: u8) {
         self.g = value;
+    }
+
+    /// Gets the normalized green channel value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let green = colo_rs::Rgba::from((0.0, 1.0, 0.0, 1.0));
+    /// assert_eq!(green.g_norm(), 1.0);
+    /// ```
+    #[inline]
+    pub fn g_norm(&self) -> f64 {
+        Self::normalize(self.g())
+    }
+
+    /// Sets the normalized green channel value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut green = colo_rs::Rgba::from((0.0, 0.5, 0.0, 1.0));
+    /// green.set_g_norm(1.0);
+    /// assert_eq!(green.g_norm(), 1.0);
+    /// ```
+    #[inline]
+    pub fn set_g_norm(&mut self, value: f64) {
+        self.set_g(Self::denormalize(value));
     }
 
     /// Gets the blue channel value.
@@ -284,6 +363,33 @@ impl Rgba {
         self.b = value;
     }
 
+    /// Gets the normalized blue channel value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let blue = colo_rs::Rgba::from((0.0, 0.0, 1.0, 1.0));
+    /// assert_eq!(blue.b_norm(), 1.0);
+    /// ```
+    #[inline]
+    pub fn b_norm(&self) -> f64 {
+        Self::normalize(self.b())
+    }
+
+    /// Sets the normalized blue channel value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut blue = colo_rs::Rgba::from((0.0, 0.0, 0.1, 1.0));
+    /// blue.set_b_norm(1.0);
+    /// assert_eq!(blue.b_norm(), 1.0);
+    /// ```
+    #[inline]
+    pub fn set_b_norm(&mut self, value: f64) {
+        self.set_b(Self::denormalize(value));
+    }
+
     /// Gets the alpha channel value.
     ///
     /// # Examples
@@ -311,6 +417,33 @@ impl Rgba {
         self.a = value;
     }
 
+    /// Gets the normalized alpha channel value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let black = colo_rs::Rgba::from((0.0, 0.0, 0.0, 1.0));
+    /// assert_eq!(black.a_norm(), 1.0);
+    /// ```
+    #[inline]
+    pub fn a_norm(&self) -> f64 {
+        Self::normalize(self.a())
+    }
+
+    /// Sets the normalized alpha channel value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut black = colo_rs::Rgba::from((0.0, 0.0, 0.0, 0.5));
+    /// black.set_a_norm(1.0);
+    /// assert_eq!(black.a_norm(), 1.0);
+    /// ```
+    #[inline]
+    pub fn set_a_norm(&mut self, value: f64) {
+        self.set_a(Self::denormalize(value));
+    }
+
     /// Checks if the color is transparent.
     ///
     /// # Examples
@@ -334,7 +467,7 @@ impl Rgba {
     /// ```
     #[inline]
     pub const fn is_transparent(&self) -> bool {
-        self.a == u8::MIN
+        self.a() == Self::CHANNEL_MIN
     }
 
     /// Checks if the color is translucent.
@@ -360,7 +493,7 @@ impl Rgba {
     /// ```
     #[inline]
     pub const fn is_translucent(&self) -> bool {
-        self.a > u8::MIN && self.a < u8::MAX
+        self.a() > Self::CHANNEL_MIN && self.a() < Self::CHANNEL_MAX
     }
 
     /// Checks if the color is opaque.
@@ -386,16 +519,36 @@ impl Rgba {
     /// ```
     #[inline]
     pub const fn is_opaque(&self) -> bool {
-        self.a == u8::MAX
+        self.a() == Self::CHANNEL_MAX
+    }
+
+    /// Normalize a channel from the range \[0, 255\] to the range \[0.0, 1.0\].
+    #[inline]
+    fn normalize(channel: u8) -> f64 {
+        channel as f64 / Self::CHANNEL_MAX as f64
+    }
+
+    /// Denormalize a channel from the range \[0.0, 1.0\] to the range \[0, 255\].
+    #[inline]
+    fn denormalize(channel: f64) -> u8 {
+        use std::ops::Mul;
+        channel
+            .clamp(Self::NORM_CHANNEL_MIN, Self::NORM_CHANNEL_MAX)
+            .mul(Self::CHANNEL_MAX as f64)
+            .round() as u8
     }
 }
 
 impl Display for Rgba {
+    #[inline]
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
             "#{:02X}{:02X}{:02X}{:02X}",
-            self.r, self.g, self.b, self.a
+            self.r(),
+            self.g(),
+            self.b(),
+            self.a()
         )
     }
 }
@@ -410,21 +563,21 @@ impl From<(u8, u8, u8, u8)> for Rgba {
 impl Into<(u8, u8, u8, u8)> for Rgba {
     #[inline]
     fn into(self) -> (u8, u8, u8, u8) {
-        (self.r, self.g, self.b, self.a)
+        (self.r(), self.g(), self.b(), self.a())
     }
 }
 
 impl From<(u8, u8, u8)> for Rgba {
     #[inline]
     fn from((r, g, b): (u8, u8, u8)) -> Self {
-        Self::new(r, g, b, u8::MAX)
+        Self::new(r, g, b, Self::CHANNEL_MAX)
     }
 }
 
 impl Into<(u8, u8, u8)> for Rgba {
     #[inline]
     fn into(self) -> (u8, u8, u8) {
-        (self.r, self.g, self.b)
+        (self.r(), self.g(), self.b())
     }
 }
 
@@ -438,28 +591,28 @@ impl From<[u8; 4]> for Rgba {
 impl Into<[u8; 4]> for Rgba {
     #[inline]
     fn into(self) -> [u8; 4] {
-        [self.r, self.g, self.b, self.a]
+        [self.r(), self.g(), self.b(), self.a()]
     }
 }
 
 impl From<[u8; 3]> for Rgba {
     #[inline]
     fn from([r, g, b]: [u8; 3]) -> Self {
-        Self::new(r, g, b, u8::MAX)
+        Self::new(r, g, b, Self::CHANNEL_MAX)
     }
 }
 
 impl Into<[u8; 3]> for Rgba {
     #[inline]
     fn into(self) -> [u8; 3] {
-        [self.r, self.g, self.b]
+        [self.r(), self.g(), self.b()]
     }
 }
 
 impl From<u32> for Rgba {
     #[inline]
-    fn from(color: u32) -> Self {
-        Self::from(color.to_be_bytes())
+    fn from(hex: u32) -> Self {
+        Self::from(hex.to_be_bytes())
     }
 }
 
@@ -467,6 +620,72 @@ impl Into<u32> for Rgba {
     #[inline]
     fn into(self) -> u32 {
         u32::from_be_bytes(self.into())
+    }
+}
+
+impl From<(f64, f64, f64, f64)> for Rgba {
+    #[inline]
+    fn from((r, g, b, a): (f64, f64, f64, f64)) -> Self {
+        Self::new(
+            Self::denormalize(r),
+            Self::denormalize(g),
+            Self::denormalize(b),
+            Self::denormalize(a),
+        )
+    }
+}
+
+impl Into<(f64, f64, f64, f64)> for Rgba {
+    #[inline]
+    fn into(self) -> (f64, f64, f64, f64) {
+        (self.r_norm(), self.g_norm(), self.b_norm(), self.a_norm())
+    }
+}
+
+impl From<(f64, f64, f64)> for Rgba {
+    #[inline]
+    fn from((r, g, b): (f64, f64, f64)) -> Self {
+        Self::new(
+            Self::denormalize(r),
+            Self::denormalize(g),
+            Self::denormalize(b),
+            Self::CHANNEL_MAX,
+        )
+    }
+}
+
+impl Into<(f64, f64, f64)> for Rgba {
+    #[inline]
+    fn into(self) -> (f64, f64, f64) {
+        (self.r_norm(), self.g_norm(), self.b_norm())
+    }
+}
+
+impl From<[f64; 4]> for Rgba {
+    #[inline]
+    fn from([r, g, b, a]: [f64; 4]) -> Self {
+        Self::from((r, g, b, a))
+    }
+}
+
+impl Into<[f64; 4]> for Rgba {
+    #[inline]
+    fn into(self) -> [f64; 4] {
+        [self.r_norm(), self.g_norm(), self.b_norm(), self.a_norm()]
+    }
+}
+
+impl From<[f64; 3]> for Rgba {
+    #[inline]
+    fn from([r, g, b]: [f64; 3]) -> Self {
+        Self::from((r, g, b))
+    }
+}
+
+impl Into<[f64; 3]> for Rgba {
+    #[inline]
+    fn into(self) -> [f64; 3] {
+        [self.r_norm(), self.g_norm(), self.b_norm()]
     }
 }
 
@@ -478,8 +697,8 @@ mod tests {
     fn test_rgba_new() {
         let transparent = Rgba::default();
 
-        let white = Rgba::new(u8::MAX, u8::MAX, u8::MAX, u8::MAX);
-        let transparent_black = Rgba::new(u8::MIN, u8::MIN, u8::MIN, u8::MIN);
+        let white = Rgba::new(255, 255, 255, 255);
+        let transparent_black = Rgba::new(0, 0, 0, 0);
 
         assert_ne!(white, transparent);
         assert_eq!(transparent_black, transparent);
@@ -489,7 +708,7 @@ mod tests {
     fn test_rgba_is_transparent() {
         let transparent = Rgba::default();
         let translucent_gray = Rgba::new(128, 128, 128, 128);
-        let white = Rgba::new(u8::MAX, u8::MAX, u8::MAX, u8::MAX);
+        let white = Rgba::new(255, 255, 255, 255);
 
         assert!(transparent.is_transparent());
         assert!(!translucent_gray.is_transparent());
@@ -500,7 +719,7 @@ mod tests {
     fn test_rgba_is_translucent() {
         let transparent = Rgba::default();
         let translucent_gray = Rgba::new(128, 128, 128, 128);
-        let white = Rgba::new(u8::MAX, u8::MAX, u8::MAX, u8::MAX);
+        let white = Rgba::new(255, 255, 255, 255);
 
         assert!(!transparent.is_translucent());
         assert!(translucent_gray.is_translucent());
@@ -511,7 +730,7 @@ mod tests {
     fn test_rgba_is_opaque() {
         let transparent = Rgba::default();
         let translucent_gray = Rgba::new(128, 128, 128, 128);
-        let white = Rgba::new(u8::MAX, u8::MAX, u8::MAX, u8::MAX);
+        let white = Rgba::new(255, 255, 255, 255);
 
         assert!(transparent.is_transparent());
         assert!(!translucent_gray.is_transparent());
