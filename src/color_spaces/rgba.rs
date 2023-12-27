@@ -87,6 +87,8 @@ use std::{
     ops::RangeInclusive,
 };
 
+use crate::Hsva;
+
 /// An 8-bit RGBA color.
 ///
 /// The `Rgba` color space is the most commonly used color space in which the
@@ -689,6 +691,42 @@ impl From<Rgba> for [f64; 3] {
     }
 }
 
+impl From<Hsva> for Rgba {
+    fn from(hsva: Hsva) -> Self {
+        use std::ops::{Mul, Neg, Rem, Sub};
+
+        let (h, s, v, a) = hsva.into();
+        let h = h / Hsva::HUE_SEXTANT;
+        let a = Self::denormalize(a);
+
+        let c = s * v;
+        let m = v - c;
+        let x = h
+            .rem(2.0)
+            .sub(Self::NORM_CHANNEL_MAX)
+            .abs()
+            .sub(Self::NORM_CHANNEL_MAX)
+            .neg()
+            .mul(c);
+
+        let (r, g, b) = match h as u8 {
+            0 => (c, x, Self::NORM_CHANNEL_MIN),
+            1 => (x, c, Self::NORM_CHANNEL_MIN),
+            2 => (Self::NORM_CHANNEL_MIN, c, x),
+            3 => (Self::NORM_CHANNEL_MIN, x, c),
+            4 => (x, Self::NORM_CHANNEL_MIN, c),
+            5 => (c, Self::NORM_CHANNEL_MIN, x),
+            _ => unreachable!("hue not in any of the six sextants"),
+        };
+
+        let r = Self::denormalize(r + m);
+        let g = Self::denormalize(g + m);
+        let b = Self::denormalize(b + m);
+
+        Self::new(r, g, b, a)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -735,5 +773,17 @@ mod tests {
         assert!(transparent.is_transparent());
         assert!(!translucent_gray.is_transparent());
         assert!(!white.is_transparent());
+    }
+
+    #[test]
+    fn test_rgba_from_hsva() {
+        let black_hsva = Hsva::new(0.0, 0.0, 0.0, 1.0);
+        let black_rgba = Rgba::new(0, 0, 0, 255);
+
+        let translucent_gray_hsva = Hsva::new(0.0, 0.0, 0.5, 0.5);
+        let translucent_gray_rgba = Rgba::new(128, 128, 128, 128);
+
+        assert_eq!(black_rgba, Rgba::from(black_hsva));
+        assert_eq!(translucent_gray_rgba, Rgba::from(translucent_gray_hsva));
     }
 }
