@@ -560,10 +560,10 @@ impl From<(u8, u8, u8, u8)> for Rgba {
     }
 }
 
-impl Into<(u8, u8, u8, u8)> for Rgba {
+impl From<Rgba> for (u8, u8, u8, u8) {
     #[inline]
-    fn into(self) -> (u8, u8, u8, u8) {
-        (self.r(), self.g(), self.b(), self.a())
+    fn from(rgba: Rgba) -> Self {
+        (rgba.r(), rgba.g(), rgba.b(), rgba.a())
     }
 }
 
@@ -574,10 +574,10 @@ impl From<(u8, u8, u8)> for Rgba {
     }
 }
 
-impl Into<(u8, u8, u8)> for Rgba {
+impl From<Rgba> for (u8, u8, u8) {
     #[inline]
-    fn into(self) -> (u8, u8, u8) {
-        (self.r(), self.g(), self.b())
+    fn from(rgba: Rgba) -> Self {
+        (rgba.r(), rgba.g(), rgba.b())
     }
 }
 
@@ -588,10 +588,10 @@ impl From<[u8; 4]> for Rgba {
     }
 }
 
-impl Into<[u8; 4]> for Rgba {
+impl From<Rgba> for [u8; 4] {
     #[inline]
-    fn into(self) -> [u8; 4] {
-        [self.r(), self.g(), self.b(), self.a()]
+    fn from(rgba: Rgba) -> Self {
+        [rgba.r(), rgba.g(), rgba.b(), rgba.a()]
     }
 }
 
@@ -602,10 +602,10 @@ impl From<[u8; 3]> for Rgba {
     }
 }
 
-impl Into<[u8; 3]> for Rgba {
+impl From<Rgba> for [u8; 3] {
     #[inline]
-    fn into(self) -> [u8; 3] {
-        [self.r(), self.g(), self.b()]
+    fn from(rgba: Rgba) -> Self {
+        [rgba.r(), rgba.g(), rgba.b()]
     }
 }
 
@@ -616,10 +616,10 @@ impl From<u32> for Rgba {
     }
 }
 
-impl Into<u32> for Rgba {
+impl From<Rgba> for u32 {
     #[inline]
-    fn into(self) -> u32 {
-        u32::from_be_bytes(self.into())
+    fn from(rgba: Rgba) -> Self {
+        u32::from_be_bytes(rgba.into())
     }
 }
 
@@ -635,10 +635,10 @@ impl From<(f64, f64, f64, f64)> for Rgba {
     }
 }
 
-impl Into<(f64, f64, f64, f64)> for Rgba {
+impl From<Rgba> for (f64, f64, f64, f64) {
     #[inline]
-    fn into(self) -> (f64, f64, f64, f64) {
-        (self.r_norm(), self.g_norm(), self.b_norm(), self.a_norm())
+    fn from(rgba: Rgba) -> Self {
+        (rgba.r_norm(), rgba.g_norm(), rgba.b_norm(), rgba.a_norm())
     }
 }
 
@@ -654,10 +654,10 @@ impl From<(f64, f64, f64)> for Rgba {
     }
 }
 
-impl Into<(f64, f64, f64)> for Rgba {
+impl From<Rgba> for (f64, f64, f64) {
     #[inline]
-    fn into(self) -> (f64, f64, f64) {
-        (self.r_norm(), self.g_norm(), self.b_norm())
+    fn from(rgba: Rgba) -> Self {
+        (rgba.r_norm(), rgba.g_norm(), rgba.b_norm())
     }
 }
 
@@ -668,10 +668,10 @@ impl From<[f64; 4]> for Rgba {
     }
 }
 
-impl Into<[f64; 4]> for Rgba {
+impl From<Rgba> for [f64; 4] {
     #[inline]
-    fn into(self) -> [f64; 4] {
-        [self.r_norm(), self.g_norm(), self.b_norm(), self.a_norm()]
+    fn from(rgba: Rgba) -> Self {
+        [rgba.r_norm(), rgba.g_norm(), rgba.b_norm(), rgba.a_norm()]
     }
 }
 
@@ -682,10 +682,10 @@ impl From<[f64; 3]> for Rgba {
     }
 }
 
-impl Into<[f64; 3]> for Rgba {
+impl From<Rgba> for [f64; 3] {
     #[inline]
-    fn into(self) -> [f64; 3] {
-        [self.r_norm(), self.g_norm(), self.b_norm()]
+    fn from(rgba: Rgba) -> Self {
+        [rgba.r_norm(), rgba.g_norm(), rgba.b_norm()]
     }
 }
 
