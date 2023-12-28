@@ -88,7 +88,7 @@ use std::{
     ops::{Range, RangeInclusive},
 };
 
-use crate::Rgba;
+use crate::{Hsla, Rgba};
 
 /// An HSVA color.
 ///
@@ -542,6 +542,26 @@ impl From<Rgba> for Hsva {
     }
 }
 
+impl From<Hsla> for Hsva {
+    fn from(hsla: Hsla) -> Self {
+        let (h, s, l, a) = hsla.into();
+
+        let l = l * 2.0;
+        let num = if l <= Hsla::CHANNEL_MAX { l } else { 2.0 - l };
+
+        let s = s * num;
+        let c = l + s;
+        let v = c / 2.0;
+        let s = if c == Hsla::CHANNEL_MIN {
+            Self::CHANNEL_MIN
+        } else {
+            s * 2.0 / c
+        };
+
+        Self::new(h, s, v, a)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -600,5 +620,17 @@ mod tests {
 
         assert_eq!(black_hsva, Hsva::from(black_rgba));
         assert_eq!(translucent_gray_hsva, Hsva::from(translucent_gray_rgba));
+    }
+
+    #[test]
+    fn test_hsva_from_hsla() {
+        let black_hsla = Hsla::new(0.0, 0.0, 0.0, 1.0);
+        let black_hsva = Hsva::new(0.0, 0.0, 0.0, 1.0);
+
+        let translucent_gray_hsla = Hsla::new(0.0, 0.0, 0.5, 0.5);
+        let translucent_gray_hsva = Hsva::new(0.0, 0.0, 0.5, 0.5);
+
+        assert_eq!(black_hsva, Hsva::from(black_hsla));
+        assert_eq!(translucent_gray_hsva, Hsva::from(translucent_gray_hsla));
     }
 }

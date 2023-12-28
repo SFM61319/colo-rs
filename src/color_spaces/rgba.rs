@@ -87,7 +87,7 @@ use std::{
     ops::RangeInclusive,
 };
 
-use crate::Hsva;
+use crate::{Hsla, Hsva};
 
 /// An 8-bit RGBA color.
 ///
@@ -703,12 +703,54 @@ impl From<Hsva> for Rgba {
         let m = v - c;
         let x = h
             .rem(2.0)
-            .sub(Self::NORM_CHANNEL_MAX)
+            .sub(Hsva::CHANNEL_MAX)
             .abs()
-            .sub(Self::NORM_CHANNEL_MAX)
+            .sub(Hsva::CHANNEL_MAX)
             .neg()
             .mul(c);
 
+        let (r, g, b) = match h as u8 {
+            0 => (c, x, Self::NORM_CHANNEL_MIN),
+            1 => (x, c, Self::NORM_CHANNEL_MIN),
+            2 => (Self::NORM_CHANNEL_MIN, c, x),
+            3 => (Self::NORM_CHANNEL_MIN, x, c),
+            4 => (x, Self::NORM_CHANNEL_MIN, c),
+            5 => (c, Self::NORM_CHANNEL_MIN, x),
+            _ => unreachable!("hue not in any of the six sextants"),
+        };
+
+        let r = Self::denormalize(r + m);
+        let g = Self::denormalize(g + m);
+        let b = Self::denormalize(b + m);
+
+        Self::new(r, g, b, a)
+    }
+}
+
+impl From<Hsla> for Rgba {
+    fn from(hsla: Hsla) -> Self {
+        use std::ops::{Mul, Neg, Rem, Sub};
+
+        let (h, s, l, a) = hsla.into();
+        let h = h / Hsva::HUE_SEXTANT;
+        let a = Self::denormalize(a);
+
+        let c = l
+            .mul(2.0)
+            .sub(Hsla::CHANNEL_MAX)
+            .abs()
+            .sub(Hsla::CHANNEL_MAX)
+            .neg()
+            .mul(s);
+        let x = h
+            .rem(2.0)
+            .sub(Hsva::CHANNEL_MAX)
+            .abs()
+            .sub(Hsva::CHANNEL_MAX)
+            .neg()
+            .mul(c);
+
+        let m = l - c / 2.0;
         let (r, g, b) = match h as u8 {
             0 => (c, x, Self::NORM_CHANNEL_MIN),
             1 => (x, c, Self::NORM_CHANNEL_MIN),
@@ -778,6 +820,18 @@ mod tests {
     #[test]
     fn test_rgba_from_hsva() {
         let black_hsva = Hsva::new(0.0, 0.0, 0.0, 1.0);
+        let black_rgba = Rgba::new(0, 0, 0, 255);
+
+        let translucent_gray_hsva = Hsva::new(0.0, 0.0, 0.5, 0.5);
+        let translucent_gray_rgba = Rgba::new(128, 128, 128, 128);
+
+        assert_eq!(black_rgba, Rgba::from(black_hsva));
+        assert_eq!(translucent_gray_rgba, Rgba::from(translucent_gray_hsva));
+    }
+
+    #[test]
+    fn test_rgba_from_hsla() {
+        let black_hsva = Hsla::new(0.0, 0.0, 0.0, 1.0);
         let black_rgba = Rgba::new(0, 0, 0, 255);
 
         let translucent_gray_hsva = Hsva::new(0.0, 0.0, 0.5, 0.5);
